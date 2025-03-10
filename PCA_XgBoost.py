@@ -12,7 +12,7 @@ import xgboost as xgb
 from tensorflow.keras.utils import to_categorical
 
 # Create output directory if it doesn't exist
-output_dir = '/Users/leopard/Desktop/NIBM/ml2/Output/PCA/Model1'
+output_dir = '/Users/leopard/Desktop/NIBM/ml2/Sign-Language//Output/PCA/Model1'
 os.makedirs(output_dir, exist_ok=True)
 
 # Load the Sign Language MNIST datasets
