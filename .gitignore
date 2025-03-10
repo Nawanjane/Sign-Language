@@ -1,5 +1,6 @@
 # Python
 venv/
+py39_env/
 __pycache__/
 *.py[cod]
 *$py.class
