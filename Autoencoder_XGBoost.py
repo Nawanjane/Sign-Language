@@ -97,7 +97,7 @@ xgb_model = xgb.XGBClassifier(
     objective='multi:softprob',
     num_class=num_classes,  # Use updated num_classes
     tree_method='hist',  # Faster algorithm
-    eval_metric='mlogloss',
+    eval_metric=['mlogloss', 'merror'],  # Move eval_metric here
     use_label_encoder=False,
     gamma=0.1,  # Minimum loss reduction for partition
     min_child_weight=3,  # Minimum sum of instance weight in a child
@@ -108,24 +108,85 @@ xgb_model = xgb.XGBClassifier(
     random_state=42
 )
 
-# Train the model with early stopping
+# Train the model without early stopping
 eval_set = [(X_train_smote, y_train_smote_reindexed), (X_test_encoded, y_test_reindexed)]
 xgb_model.fit(
     X_train_smote, y_train_smote_reindexed,
     eval_set=eval_set,
-    verbose=True,
-    callbacks=[xgb.callback.EarlyStopping(rounds=20)]
+    verbose=True
 )
+
+# Create history plots manually
+# Plot learning curves
+plt.figure(figsize=(12, 10))
+
+# Plot feature importance (weight)
+plt.subplot(2, 2, 1)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='weight', ax=plt.gca())
+plt.title('Feature Importance (Weight)')
+
+# Plot feature importance (gain)
+plt.subplot(2, 2, 2)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='gain', ax=plt.gca())
+plt.title('Feature Importance (Gain)')
+
+# Plot feature importance (cover)
+plt.subplot(2, 2, 3)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='cover', ax=plt.gca())
+plt.title('Feature Importance (Cover)')
+
+# Plot feature importance (total_gain)
+plt.subplot(2, 2, 4)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='total_gain', ax=plt.gca())
+plt.title('Feature Importance (Total Gain)')
+
+plt.tight_layout()
+plt.savefig(f"{output_dir}/feature_importance_plots.png")
+plt.show()
+
+# Get evaluation results from the model's attribute
+results = xgb_model.evals_result()
 
 # Save model
 xgb_model.save_model(f"{output_dir}/xgboost_model.json")
 
+# Plot learning curves
+plt.figure(figsize=(12, 10))
+
+# Plot training and validation loss
+plt.subplot(2, 2, 1)
+epochs = len(results['validation_0']['mlogloss'])
+x_axis = range(0, epochs)
+plt.plot(x_axis, results['validation_0']['mlogloss'], 'b-', label='Train Loss')
+plt.plot(x_axis, results['validation_1']['mlogloss'], 'r-', label='Validation Loss')
+plt.legend()
+plt.xlabel('Iterations')
+plt.ylabel('Log Loss')
+plt.title('XGBoost Log Loss')
+plt.grid(True)
+
+# Plot training and validation error
+plt.subplot(2, 2, 2)
+plt.plot(x_axis, results['validation_0']['merror'], 'b-', label='Train Error')
+plt.plot(x_axis, results['validation_1']['merror'], 'r-', label='Validation Error')
+plt.legend()
+plt.xlabel('Iterations')
+plt.ylabel('Classification Error')
+plt.title('XGBoost Classification Error')
+plt.grid(True)
+
 # Plot feature importance
-plt.figure(figsize=(10, 6))
-xgb.plot_importance(xgb_model, max_num_features=20)
-plt.title('Feature Importance')
+plt.subplot(2, 2, 3)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='weight', ax=plt.gca())
+plt.title('Feature Importance (Weight)')
+
+# Plot feature importance by gain
+plt.subplot(2, 2, 4)
+xgb.plot_importance(xgb_model, max_num_features=10, importance_type='gain', ax=plt.gca())
+plt.title('Feature Importance (Gain)')
+
 plt.tight_layout()
-plt.savefig(f"{output_dir}/feature_importance.png")
+plt.savefig(f"{output_dir}/learning_curves.png")
 plt.show()
 
 # Make predictions
